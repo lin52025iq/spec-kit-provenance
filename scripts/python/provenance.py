@@ -88,7 +88,16 @@ def field(block: str, name: str) -> str | None:
     return m.group(1).strip() if m else None
 
 
-def add(registry: Path, raw_uri: str, title: str | None, source_type: str | None, summary: str | None) -> int:
+def add(
+    registry: Path,
+    raw_uri: str,
+    title: str | None,
+    source_type: str | None,
+    summary: str | None,
+    origin: str = "manual",
+    phase: str = "manual",
+    context: str | None = None,
+) -> int:
     ensure_registry(registry)
     uri = sanitize_url(raw_uri)
     text = registry.read_text(encoding="utf-8")
@@ -105,6 +114,7 @@ def add(registry: Path, raw_uri: str, title: str | None, source_type: str | None
     label = title or readable_label(uri)
     status = "active" if title else "needs-review"
     desc = summary or ("External reference; title and purpose need review." if not title else "Registered external source.")
+    context_value = context or "—"
     today = dt.date.today().isoformat()
     block = (
         f"\n## {sid} — {label}\n\n"
@@ -116,11 +126,14 @@ def add(registry: Path, raw_uri: str, title: str | None, source_type: str | None
         f"- **Display**: {label}\n"
         f"- **Locator**: —\n"
         f"- **Summary**: {desc}\n"
+        f"- **Origin**: {origin}\n"
+        f"- **Introduced during**: {phase}\n"
+        f"- **Context**: {context_value}\n"
         f"- **Used by**: —\n"
         f"- **Superseded by**: —\n"
     )
     registry.write_text(text.rstrip() + "\n" + block, encoding="utf-8")
-    print(f"ADDED {sid} — {label}\n{uri}\nstatus={status}")
+    print(f"ADDED {sid} — {label}\n{uri}\nstatus={status}\norigin={origin}\nphase={phase}")
     return 0
 
 
@@ -129,7 +142,11 @@ def list_sources(registry: Path) -> int:
         print("No source registry found.")
         return 0
     for sid, _, label, block in entries(registry.read_text(encoding="utf-8")):
-        print(f"{sid}\t{label}\t{field(block, 'Type') or '-'}\t{field(block, 'Status') or '-'}\t{field(block, 'URI') or '-'}")
+        print(
+            f"{sid}\t{label}\t{field(block, 'Type') or '-'}\t"
+            f"{field(block, 'Status') or '-'}\t{field(block, 'Origin') or '-'}\t"
+            f"{field(block, 'URI') or '-'}"
+        )
     return 0
 
 
@@ -146,6 +163,8 @@ def lint(registry: Path) -> int:
         uri = field(block, "URI")
         status = field(block, "Status")
         summary = field(block, "Summary")
+        origin = field(block, "Origin")
+        phase = field(block, "Introduced during")
         if not uri or uri == "—":
             issues.append(("ERROR", sid, "missing URI/reference"))
         elif uri in seen_uris:
@@ -158,6 +177,10 @@ def lint(registry: Path) -> int:
             issues.append(("WARN", sid, "human-readable display label missing"))
         if not summary or summary == "—":
             issues.append(("WARN", sid, "summary/purpose missing"))
+        if not origin:
+            issues.append(("WARN", sid, "origin metadata missing"))
+        if not phase:
+            issues.append(("WARN", sid, "introduced-during metadata missing"))
         if uri and any(re.search(rf"[?&]{re.escape(k)}=", uri, re.I) for k in SECRET_KEYS):
             issues.append(("ERROR", sid, "URI may contain secret query material"))
     if not issues:
@@ -177,12 +200,24 @@ def main() -> int:
     p_add.add_argument("--title")
     p_add.add_argument("--type")
     p_add.add_argument("--summary")
+    p_add.add_argument("--origin", default="manual")
+    p_add.add_argument("--phase", default="manual")
+    p_add.add_argument("--context")
     sub.add_parser("list")
     sub.add_parser("lint")
     args = parser.parse_args()
     registry = Path(args.registry)
     if args.command == "add":
-        return add(registry, args.uri, args.title, args.type, args.summary)
+        return add(
+            registry,
+            args.uri,
+            args.title,
+            args.type,
+            args.summary,
+            args.origin,
+            args.phase,
+            args.context,
+        )
     if args.command == "list":
         return list_sources(registry)
     return lint(registry)
