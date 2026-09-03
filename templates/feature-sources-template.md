@@ -1,27 +1,28 @@
-# Feature Sources
+# 当前 Feature 来源
 
-> Sources actually used by this feature. Full metadata lives in `.specify/provenance/sources.md`.
+> 这里只记录当前 Feature 实际使用到的来源。完整元数据统一保存在 `.specify/provenance/sources.md`。
 
-## Requirements
+## 需求来源
 
-<!-- Example:
-- [SRC-001] User Login PRD — login flow and verification-code requirements
+<!-- 示例：
+- [SRC-001] 用户登录 PRD — 登录流程和验证码需求
 -->
 
-## Design
+## 设计来源
 
-<!-- Example:
-- [SRC-002] Login Figma — layout, loading, and error states
+<!-- 示例：
+- [SRC-002] 登录页 Figma — 页面布局、Loading 和错误状态
 -->
 
-## Technical References
+## 技术参考
 
-<!-- Example:
+<!-- 示例：
 - [SRC-003] Auth API — `POST /v2/auth/login`
 -->
 
-## Notes
+## 说明
 
-- Keep source IDs stable even if the underlying URI changes.
-- Do not duplicate full registry metadata here.
-- Prefer readable labels after the source ID; never leave only `[SRC-xxx] https://...` when a human-readable label can be inferred.
+- 即使底层 URI 发生变化，也必须保持 Source ID 稳定。
+- 不要在这里重复完整的注册表元数据。
+- Source ID 后优先使用可读名称，不要只保留 `[SRC-xxx] https://...` 这种难以理解的形式。
+- 当来源由用户在当前对话中提供时，项目级注册表应保留其 `Origin`、`Introduced during` 和 `Context`。
