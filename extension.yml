@@ -2,9 +2,9 @@ schema_version: "1.0"
 
 extension:
   id: provenance
-  name: "Spec Kit Provenance"
+  name: "Spec Kit 来源追溯"
   version: "0.1.0"
-  description: "Track external sources and provenance for specifications, plans, research, and other Spec Kit artifacts."
+  description: "管理用户对话和 Spec Kit 产物中的外部来源、证据与追溯关系。"
   author: lin52025iq
   repository: https://github.com/lin52025iq/spec-kit-provenance
   license: MIT
@@ -16,33 +16,54 @@ provides:
   commands:
     - name: speckit.provenance.add
       file: commands/speckit.provenance.add.md
-      description: "Register a source and assign a stable SRC identifier"
+      description: "登记来源并分配稳定的 SRC 标识符"
     - name: speckit.provenance.list
       file: commands/speckit.provenance.list.md
-      description: "List registered sources in a human-readable form"
+      description: "以可读索引形式列出已登记来源"
     - name: speckit.provenance.show
       file: commands/speckit.provenance.show.md
-      description: "Show one source and its references"
+      description: "查看单个来源及其追溯关系"
     - name: speckit.provenance.capture
       file: commands/speckit.provenance.capture.md
-      description: "Capture high-confidence sources from the active feature context"
+      description: "从用户对话和当前 Feature 上下文中捕获来源"
     - name: speckit.provenance.lint
       file: commands/speckit.provenance.lint.md
-      description: "Validate source registry and citations"
+      description: "检查来源注册表、引用关系和来源质量"
+
+  templates:
+    - name: provenance-source-registry
+      file: templates/source-registry-template.md
+      description: "项目级来源注册表模板"
+    - name: provenance-feature-sources
+      file: templates/feature-sources-template.md
+      description: "Feature 级来源清单模板"
+
+  scripts:
+    - name: provenance-helper
+      file: scripts/python/provenance.py
+      description: "来源 URL 清理、去重、登记、列表和基础检查辅助脚本"
+      runtimes:
+        - python
+
+  config:
+    - name: provenance-config
+      template: provenance-config.template.yml
+      description: "来源捕获、引用、检查和安全规则配置"
+      required: false
 
 hooks:
   after_specify:
     command: speckit.provenance.capture
     optional: true
-    description: "Capture requirement and design sources after specification"
+    description: "规格生成后捕获用户提供的需求和设计来源"
   after_clarify:
     command: speckit.provenance.capture
     optional: true
-    description: "Capture sources introduced during clarification"
+    description: "需求澄清后捕获对话中新引入的来源"
   after_plan:
     command: speckit.provenance.capture
     optional: true
-    description: "Capture API, architecture, standards, and research sources after planning"
+    description: "规划后捕获 API、架构、标准和研究来源"
 
 tags:
   - provenance
