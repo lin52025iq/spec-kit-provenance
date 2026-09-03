@@ -38,6 +38,14 @@ specify extension remove provenance
 specify extension add provenance --from https://github.com/lin52025iq/spec-kit-provenance/archive/refs/heads/master.zip
 ```
 
+安装成功后，配置模板应自动生成到：
+
+```text
+.specify/extensions/provenance/provenance-config.yml
+```
+
+如果升级前曾看到 `Config templates not scaffolded: provenance-config`，请使用上面的 `--force` 命令重新安装；`v0.1.1` 已修正配置目标文件名。
+
 > `master.zip` 适合当前快速迭代阶段。后续发布正式版本后，推荐改为固定 Release Tag 的 ZIP 地址，以获得可重复安装能力。
 
 ## 核心场景：管理用户对话中提供的来源
@@ -315,7 +323,7 @@ spec-kit-provenance
 
 ## 当前版本
 
-`0.1.0`
+`0.1.1`
 
 兼容基线：
 
@@ -330,7 +338,8 @@ spec-kit-provenance
 - `add / list / show / capture / lint`；
 - `after_specify / after_clarify / after_plan` 可选 Hook；
 - URL 清理和基础来源质量检查；
-- 项目级 Registry 与 Feature 级来源清单。
+- 项目级 Registry 与 Feature 级来源清单；
+- 修复普通 ZIP 安装时 `provenance-config.yml` 未自动 scaffold 的问题。
 
 ## 后续方向
 
