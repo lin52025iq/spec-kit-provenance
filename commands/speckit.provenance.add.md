@@ -1,38 +1,56 @@
 ---
-description: Register an external source and assign a stable SRC identifier
+description: 登记外部来源并分配稳定的 SRC 标识符
 ---
 
-# Provenance Add
+# 登记来源
 
-Register the source supplied in `$ARGUMENTS` in `.specify/provenance/sources.md`.
+将 `$ARGUMENTS` 中提供的来源登记到 `.specify/provenance/sources.md`。
 
-## Rules
+## 规则
 
-1. Accept a URL, local document path, repository reference, or a short description plus location.
-2. Never copy the source body into the registry. Record provenance metadata only.
-3. Search the registry before creating a source. Reuse an existing source when the normalized URI already exists.
-4. Allocate the next stable identifier in the form `SRC-001`, `SRC-002`, ... . Never renumber existing sources.
-5. The registry must remain understandable to a person browsing GitHub.
+1. 接受 URL、本地文档路径、代码仓库引用，或“简短说明 + 来源位置”。
+2. 不要把来源正文复制进注册表，只记录来源元数据。
+3. 创建来源前先检查注册表；当规范化后的 URI 已存在时，复用已有来源。
+4. 按 `SRC-001`、`SRC-002`……的形式分配下一个稳定标识符。已有 Source ID 永远不要重新编号。
+5. 注册表必须保证人在 GitHub 中直接浏览时也能读懂。
+6. 如果来源来自当前用户对话，应尽可能记录 `Origin: user`、`Introduced during` 和简短的 `Context`。
 
-## Bare URL Handling
+## 仅提供 URL 时
 
-A URL alone is valid input. Never store it as an unexplained bare link.
+用户只提供一个 URL 也是合法输入，但最终不能只保存成一条无法理解的裸链接。
 
-When only a URL is available:
+当只有 URL 时：
 
-- infer a readable display name from the hostname and meaningful path segments;
-- infer a likely `provider` when obvious (`figma`, `github`, `notion`, `confluence`, `swagger`, etc.);
-- infer `type` only when confidence is high; otherwise use `other`;
-- set `status` to `needs-review` when the real document title or purpose is not known;
-- add a short `Summary` such as `External reference provided during specification; title needs review.`;
-- preserve enough URI information for the source to be opened later.
+- 根据主机名和有意义的路径片段生成可读的临时显示名称；
+- 当信息明显时推断 `Provider`，例如 `figma`、`github`、`notion`、`confluence`、`swagger`；
+- 只有在置信度较高时才推断 `Type`，否则使用 `other`；
+- 如果不知道真实文档标题或用途，将 `Status` 设为 `needs-review`；
+- 填写真实且保守的摘要，例如“用户在需求讨论中提供的外部参考，标题和具体用途待确认”；
+- 保留足够的 URI 信息，确保后续仍可访问该来源。
 
-Example: `https://docs.example.com/auth/api-v2` should be displayed as something like `docs.example.com — auth / api-v2`, not merely as the raw URL.
+例如：
 
-## Security
+`https://docs.example.com/auth/api-v2`
 
-Do not persist secrets in URIs. Remove query parameters that appear to contain tokens, API keys, signatures, credentials, or temporary authentication material. If removing them would make the URI unusable, record a safe base URI and note that authentication is required.
+应显示为类似：
 
-## Output
+`docs.example.com — auth / api-v2`
 
-Report the assigned/reused source ID, readable display name, type, URI, and status. If the source belongs to the active feature, add a concise reference to that feature's `sources.md` without duplicating all metadata.
+而不是只显示原始 URL。
+
+## 安全要求
+
+不得把秘密信息持久化到 URI。应移除看起来包含 token、API Key、签名、凭据或临时认证信息的 query 参数。如果移除后 URL 无法直接使用，则保存安全的基础地址，并注明需要认证访问。
+
+## 输出
+
+报告：
+
+- 新分配或复用的 Source ID；
+- 可读显示名称；
+- 类型；
+- URI；
+- 状态；
+- 对话来源信息（若存在）。
+
+如果该来源属于当前 Feature，同时在该 Feature 的 `sources.md` 中加入简洁引用，不要复制完整注册表元数据。
