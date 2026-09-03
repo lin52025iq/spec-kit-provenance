@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-"""Minimal Git-native source registry helper for Spec Kit Provenance v0.1.
+"""Spec Kit Provenance v0.1 的最小 Git-native 来源注册辅助工具。
 
-The Markdown registry remains the source of truth. This helper intentionally
-implements only deterministic operations that are safe to automate:
-URL sanitization, readable label inference, duplicate detection, ID allocation,
-add/list and basic lint.
+Markdown 注册表始终是唯一事实来源。该脚本只负责适合自动化的确定性操作：
+URL 清理、可读名称推断、重复检测、ID 分配、登记、列表和基础检查。
 """
 
 from __future__ import annotations
@@ -23,20 +21,29 @@ def sanitize_url(raw: str) -> str:
     parsed = urlparse(raw.strip())
     if parsed.scheme not in {"http", "https"}:
         return raw.strip()
-    safe_query = [(k, v) for k, v in parse_qsl(parsed.query, keep_blank_values=True)
-                  if k.lower() not in SECRET_KEYS]
+    safe_query = [
+        (k, v)
+        for k, v in parse_qsl(parsed.query, keep_blank_values=True)
+        if k.lower() not in SECRET_KEYS
+    ]
     path = parsed.path or "/"
     if path != "/":
         path = path.rstrip("/")
-    return urlunparse((parsed.scheme.lower(), parsed.netloc.lower(), path, "", urlencode(safe_query), ""))
+    return urlunparse(
+        (parsed.scheme.lower(), parsed.netloc.lower(), path, "", urlencode(safe_query), "")
+    )
 
 
 def infer_provider(uri: str) -> str:
     host = urlparse(uri).netloc.lower()
     providers = {
-        "figma.com": "figma", "github.com": "github", "notion.so": "notion",
-        "notion.site": "notion", "atlassian.net": "confluence/jira",
-        "docs.google.com": "google-docs", "swagger.io": "swagger",
+        "figma.com": "figma",
+        "github.com": "github",
+        "notion.so": "notion",
+        "notion.site": "notion",
+        "atlassian.net": "confluence/jira",
+        "docs.google.com": "google-docs",
+        "swagger.io": "swagger",
     }
     for suffix, provider in providers.items():
         if host == suffix or host.endswith("." + suffix):
@@ -64,7 +71,7 @@ def readable_label(uri: str) -> str:
     if not parsed.netloc:
         return Path(uri).name or uri
     segments = [s for s in parsed.path.split("/") if s]
-    useful = " / ".join(segments[-2:]) if segments else "home"
+    useful = " / ".join(segments[-2:]) if segments else "首页"
     return f"{parsed.netloc} — {useful}"
 
 
@@ -72,7 +79,11 @@ def ensure_registry(path: Path) -> None:
     if path.exists():
         return
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("# Source Registry\n\n> Canonical external source registry. Sources are referenced, not copied.\n\n", encoding="utf-8")
+    path.write_text(
+        "# 来源注册表\n\n"
+        "> Spec Kit 项目使用的外部来源统一登记在这里。来源只建立引用，不复制原文。\n\n",
+        encoding="utf-8",
+    )
 
 
 def entries(text: str):
@@ -104,7 +115,7 @@ def add(
     existing = list(entries(text))
     for sid, _, label, block in existing:
         if field(block, "URI") == uri:
-            print(f"REUSED {sid} — {label}\n{uri}")
+            print(f"复用 {sid} — {label}\n{uri}")
             return 0
 
     next_num = max((num for _, num, _, _ in existing), default=0) + 1
@@ -113,7 +124,11 @@ def add(
     inferred_type = source_type or infer_type(uri, provider)
     label = title or readable_label(uri)
     status = "active" if title else "needs-review"
-    desc = summary or ("External reference; title and purpose need review." if not title else "Registered external source.")
+    desc = summary or (
+        "外部参考来源；真实标题和具体用途待确认。"
+        if not title
+        else "已登记的外部来源。"
+    )
     context_value = context or "—"
     today = dt.date.today().isoformat()
     block = (
@@ -133,13 +148,16 @@ def add(
         f"- **Superseded by**: —\n"
     )
     registry.write_text(text.rstrip() + "\n" + block, encoding="utf-8")
-    print(f"ADDED {sid} — {label}\n{uri}\nstatus={status}\norigin={origin}\nphase={phase}")
+    print(
+        f"已登记 {sid} — {label}\n{uri}\n"
+        f"status={status}\norigin={origin}\nphase={phase}"
+    )
     return 0
 
 
 def list_sources(registry: Path) -> int:
     if not registry.exists():
-        print("No source registry found.")
+        print("尚未找到来源注册表。")
         return 0
     for sid, _, label, block in entries(registry.read_text(encoding="utf-8")):
         print(
@@ -152,13 +170,13 @@ def list_sources(registry: Path) -> int:
 
 def lint(registry: Path) -> int:
     if not registry.exists():
-        print("ERROR registry missing")
+        print("ERROR：来源注册表不存在")
         return 1
     text = registry.read_text(encoding="utf-8")
     seen_ids, seen_uris, issues = set(), {}, []
     for sid, _, label, block in entries(text):
         if sid in seen_ids:
-            issues.append(("ERROR", sid, "duplicate source ID"))
+            issues.append(("ERROR", sid, "Source ID 重复"))
         seen_ids.add(sid)
         uri = field(block, "URI")
         status = field(block, "Status")
@@ -166,25 +184,27 @@ def lint(registry: Path) -> int:
         origin = field(block, "Origin")
         phase = field(block, "Introduced during")
         if not uri or uri == "—":
-            issues.append(("ERROR", sid, "missing URI/reference"))
+            issues.append(("ERROR", sid, "缺少 URI 或其他来源位置"))
         elif uri in seen_uris:
-            issues.append(("WARN", sid, f"duplicate URI also used by {seen_uris[uri]}"))
+            issues.append(("WARN", sid, f"URI 与 {seen_uris[uri]} 重复"))
         else:
             seen_uris[uri] = sid
         if status == "needs-review":
-            issues.append(("WARN", sid, "source metadata needs human review"))
+            issues.append(("WARN", sid, "来源元数据仍需要人工确认"))
         if not label or label.startswith("http"):
-            issues.append(("WARN", sid, "human-readable display label missing"))
+            issues.append(("WARN", sid, "缺少可读显示名称"))
         if not summary or summary == "—":
-            issues.append(("WARN", sid, "summary/purpose missing"))
+            issues.append(("WARN", sid, "缺少来源摘要或用途"))
         if not origin:
-            issues.append(("WARN", sid, "origin metadata missing"))
+            issues.append(("WARN", sid, "缺少 Origin 元数据"))
         if not phase:
-            issues.append(("WARN", sid, "introduced-during metadata missing"))
-        if uri and any(re.search(rf"[?&]{re.escape(k)}=", uri, re.I) for k in SECRET_KEYS):
-            issues.append(("ERROR", sid, "URI may contain secret query material"))
+            issues.append(("WARN", sid, "缺少 Introduced during 元数据"))
+        if uri and any(
+            re.search(rf"[?&]{re.escape(k)}=", uri, re.I) for k in SECRET_KEYS
+        ):
+            issues.append(("ERROR", sid, "URI 可能包含敏感 query 参数"))
     if not issues:
-        print("OK provenance registry")
+        print("OK：来源注册表检查通过")
         return 0
     for severity, sid, message in issues:
         print(f"{severity} {sid}: {message}")
@@ -192,10 +212,10 @@ def lint(registry: Path) -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Spec Kit 来源注册表辅助工具")
     parser.add_argument("--registry", default=".specify/provenance/sources.md")
     sub = parser.add_subparsers(dest="command", required=True)
-    p_add = sub.add_parser("add")
+    p_add = sub.add_parser("add", help="登记来源")
     p_add.add_argument("uri")
     p_add.add_argument("--title")
     p_add.add_argument("--type")
@@ -203,8 +223,8 @@ def main() -> int:
     p_add.add_argument("--origin", default="manual")
     p_add.add_argument("--phase", default="manual")
     p_add.add_argument("--context")
-    sub.add_parser("list")
-    sub.add_parser("lint")
+    sub.add_parser("list", help="列出来源")
+    sub.add_parser("lint", help="检查来源注册表")
     args = parser.parse_args()
     registry = Path(args.registry)
     if args.command == "add":
