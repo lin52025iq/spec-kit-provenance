@@ -46,7 +46,7 @@ provides:
         - python
 
   config:
-    - name: provenance-config
+    - name: provenance-config.yml
       template: provenance-config.template.yml
       description: "来源捕获、引用、检查和安全规则配置"
       required: false
