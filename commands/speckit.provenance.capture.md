@@ -1,105 +1,109 @@
 ---
-description: Capture user-provided and high-confidence external sources from the active Spec Kit conversation and feature context
+description: 从当前 Spec Kit 对话和 Feature 上下文中捕获用户提供的高置信度外部来源
 ---
 
-# Provenance Capture
+# 捕获来源
 
-Capture external sources introduced during the active Spec Kit workflow, with **user-provided conversational input as the highest-priority source surface**.
+在当前 Spec Kit 工作流中捕获外部来源，并将**用户在对话中主动提供的信息作为最高优先级来源入口**。
 
-The goal is not merely to scan generated Markdown. The goal is to preserve evidence that the user supplied during `/speckit.specify`, `/speckit.clarify`, `/speckit.plan`, or related follow-up conversation before that evidence disappears from working context.
+目标并不只是扫描已经生成的 Markdown，而是在 `/speckit.specify`、`/speckit.clarify`、`/speckit.plan` 以及相关后续讨论中，及时保存用户提供的证据和参考资料，避免这些信息随着对话上下文消失。
 
-## Capture Priority
+## 捕获优先级
 
-Inspect source surfaces in this order:
+按以下顺序检查：
 
-1. **Current user input and recent workflow conversation**
-   - URLs pasted by the user;
-   - Markdown links;
-   - references such as “需求文档在…”, “参考这个…”, “API 文档…”, “Figma…”, “这个 Issue…”, “见附件/文件…”;
-   - local document paths or repository references explicitly supplied as evidence;
-   - a URL supplied without explanation.
-2. **Current command arguments (`$ARGUMENTS`) and hook context**.
-3. **Active feature artifacts**: `spec.md`, `plan.md`, `research.md`, `data-model.md`, `quickstart.md`, and existing `sources.md`.
+1. **当前用户输入与最近的工作流对话**
+   - 用户粘贴的 URL；
+   - Markdown 链接；
+   - “需求文档在……”“参考这个……”“API 文档……”“Figma……”“这个 Issue……”等明确参考语句；
+   - 用户作为依据提供的本地文档路径、代码仓库位置；
+   - 用户只发送了一个 URL，但当前上下文明显是在提供参考资料。
+2. **当前命令参数 `$ARGUMENTS` 与 Hook 上下文**。
+3. **当前 Feature 产物**：`spec.md`、`plan.md`、`research.md`、`data-model.md`、`quickstart.md` 和已有的 `sources.md`。
 
-Do not wait for a source to appear in a generated artifact before registering it when it was already clearly supplied by the user.
+如果来源已经明确由用户在对话中提供，不要等它之后被写入生成文档才登记。
 
-## Conversation Source Rule
+## 用户对话来源规则
 
-When the user intentionally provides a document, URL, file, design, API reference, issue, standard, repository location, or other external material to help define or plan the feature, treat it as provenance unless it is clearly incidental.
+当用户主动提供文档、URL、文件、设计稿、API 资料、Issue、标准、代码仓库位置或其他外部材料，用于帮助定义、澄清或规划当前 Feature 时，应将其视为来源，除非它明显只是偶然出现的信息。
 
-Examples that SHOULD be captured:
+应该捕获的例子：
 
-- “需求参考这个：https://docs.example.com/prd/login”
-- “UI 看这个 Figma：https://figma.com/design/... ”
-- “接口定义：https://api.example.com/openapi.json”
-- “这里有个 GitHub issue 可以参考：https://github.com/org/repo/issues/123”
-- a user message containing only `https://...` when the surrounding workflow makes it clear that it is being supplied as reference material;
-- “需求文档在 docs/login-prd.md”;
-- “以仓库里的 ADR-004 为准”。
+- `需求参考这个：https://docs.example.com/prd/login`
+- `UI 看这个 Figma：https://figma.com/design/...`
+- `接口定义：https://api.example.com/openapi.json`
+- `这里有个 GitHub issue 可以参考：https://github.com/org/repo/issues/123`
+- 用户只发了一条 `https://...`，但当前工作流上下文清楚表明这是参考资料；
+- `需求文档在 docs/login-prd.md`；
+- `以仓库里的 ADR-004 为准`。
 
-Examples that SHOULD NOT be auto-registered:
+不应该自动登记的例子：
 
-- localhost/runtime endpoints used only as implementation examples;
-- callback URLs, test data, package homepage metadata, or placeholder domains;
-- a URL mentioned only as output the product should generate;
-- arbitrary code paths with no indication that they are source material.
+- 仅作为实现示例出现的 localhost/runtime endpoint；
+- callback URL、测试数据、包主页、占位域名；
+- 产品本身需要生成或展示的 URL；
+- 没有任何“参考/依据”语义的普通代码路径。
 
-If confidence is low, report a **potential source** instead of silently registering it.
+置信度不足时，不要静默登记，改为报告“潜在来源”。
 
-## Preserve User Intent
+## 保留用户意图
 
-For every captured source, preserve what can be truthfully inferred from the user's message:
+对每个来自对话的来源，尽可能保存用户消息中可以真实确定的信息：
 
-- **Origin**: normally `user` when introduced directly by the user;
-- **Introduced during**: `specify`, `clarify`, `plan`, or the closest active workflow phase;
-- **Context**: a short human-readable note describing why the user supplied it, for example `登录需求参考`, `UI 设计稿`, or `认证接口定义`;
-- **Type** and **Provider** when reasonably inferable;
-- **Display** title when supplied by the user.
+- **Origin**：用户直接提供时通常记录为 `user`；
+- **Introduced during**：记录为 `specify`、`clarify`、`plan` 或最接近的工作流阶段；
+- **Context**：用一小段中文说明用户为什么提供它，例如“登录需求参考”“UI 设计稿”“认证接口定义”；
+- **Type** 和 **Provider**：只有在可以合理判断时填写；
+- **Display**：如果用户给出了明确名称，应优先使用用户给出的名称。
 
-Do not copy the full conversation into the registry. Store only concise provenance metadata needed to understand why the source exists.
+不要把整段对话复制进注册表，只保存足以理解“这个来源为什么存在”的简短上下文。
 
-## Bare URL Handling
+## 仅提供 URL 时
 
-A bare URL is valid source input.
+裸 URL 也是合法的来源输入。
 
-When only a URL is known:
+当只知道 URL 时：
 
-1. sanitize it before persistence;
-2. derive a readable provisional display label from provider/host/path;
-3. use surrounding user wording as `Context` when available;
-4. mark metadata `needs-review` if the real title/purpose remains unknown;
-5. NEVER invent a document title or contents;
-6. preserve the same `SRC-xxx` when metadata is later enriched.
+1. 持久化之前先清理 URL；
+2. 根据 provider / host / path 生成可读的临时显示名称；
+3. 如果周围用户文字能表达用途，将其保存到 `Context`；
+4. 如果真实标题或用途仍未知，将状态标记为 `needs-review`；
+5. **绝不能虚构文档标题或内容**；
+6. 后续补充元数据时必须继续使用同一个 `SRC-xxx`。
 
-The registry must remain understandable even when many sources began life as bare URLs.
+即使大量来源最初只是裸 URL，注册表也必须保持可读。
 
-## Registration
+## 登记规则
 
-For each high-confidence source:
+对每个高置信度来源：
 
-1. Normalize the URI enough to detect exact/obvious duplicates.
-2. Reuse an existing `SRC-xxx` when already registered.
-3. Otherwise register it following `/speckit.provenance.add` rules.
-4. Record conversational provenance metadata (`Origin`, `Introduced during`, `Context`).
-5. Add/reconcile the active feature's `sources.md`, grouped under Requirements, Design, or Technical References.
-6. Never copy full external document contents into the registry.
+1. 规范化 URI，用于识别完全相同或明显重复的来源；
+2. 已经存在时复用对应的 `SRC-xxx`；
+3. 不存在时按照 `/speckit.provenance.add` 的规则创建；
+4. 记录对话来源元数据：`Origin`、`Introduced during`、`Context`；
+5. 同步当前 Feature 的 `sources.md`，按“需求来源 / 设计来源 / 技术参考”分类；
+6. 不复制外部文档全文。
 
-If an existing source is reused in a new feature or phase, update its usage metadata rather than creating another ID.
+当已有来源在新的 Feature 或阶段再次使用时，应更新其使用关系，而不是创建新的 Source ID。
 
-## Citations
+## 引用
 
-When a source-derived relationship is clear, add concise citations such as `[SRC-003]` or `[SRC-003 §4.2]` to the relevant requirement, decision, or research conclusion.
+当来源与具体需求、设计决策或研究结论之间的关系明确时，可以加入简洁引用：
 
-Do not aggressively annotate every sentence. Capture meaningful provenance relationships.
+- `[SRC-003]`
+- `[SRC-003 §4.2]`
+- `[SRC-009 POST /v2/auth/login]`
 
-## Output
+不要给每句话都机械添加引用，只记录有意义的追溯关系。
 
-Keep the report concise and actionable:
+## 输出
 
-- newly registered sources;
-- existing sources reused;
-- sources captured from user conversation;
-- sources marked `needs-review`;
-- low-confidence potential sources not auto-registered.
+报告保持简洁，只说明：
 
-Do not interrupt the normal Spec Kit workflow merely to ask the user for metadata that can safely remain `needs-review` and be enriched later.
+- 新登记的来源；
+- 复用的已有来源；
+- 从用户对话中捕获的来源；
+- 被标记为 `needs-review` 的来源；
+- 因置信度不足而没有自动登记的潜在来源。
+
+不要为了补齐可以后续完善的来源元数据而打断正常 Spec Kit 工作流。
