@@ -1,29 +1,67 @@
-# Spec Kit Provenance
+# Spec Kit 来源追溯扩展
 
-Git-native source and evidence tracking for [Spec Kit](https://github.com/github/spec-kit).
+为 [Spec Kit](https://github.com/github/spec-kit) 提供 Git-native 的来源、证据与追溯管理能力。
 
-`spec-kit-provenance` answers a simple question throughout specification-driven development:
+它主要回答一个问题：
 
-> Where did this requirement, design constraint, API decision, or research conclusion come from?
+> 这条需求、设计约束、API 决策或研究结论，到底来自哪里？
 
-## Primary Use Case: User-Provided Sources in Conversation
+## 一键安装
 
-The primary source surface is the **user conversation**, not only generated Markdown.
+先确保当前项目已经通过 `specify init` 初始化。
 
-When a user supplies reference material during `/speckit.specify`, `/speckit.clarify`, `/speckit.plan`, or related follow-up discussion, Provenance should preserve it before the conversational context is lost.
+然后直接从 GitHub 安装当前版本：
 
-Typical examples:
+```bash
+specify extension add provenance --from https://github.com/lin52025iq/spec-kit-provenance/archive/refs/heads/master.zip
+```
+
+安装完成后查看状态：
+
+```bash
+specify extension list
+specify extension info provenance
+```
+
+如果已经安装过，希望直接用仓库最新内容覆盖更新：
+
+```bash
+specify extension add provenance --from https://github.com/lin52025iq/spec-kit-provenance/archive/refs/heads/master.zip --force
+```
+
+也可以移除后重新安装：
+
+```bash
+specify extension remove provenance
+specify extension add provenance --from https://github.com/lin52025iq/spec-kit-provenance/archive/refs/heads/master.zip
+```
+
+> `master.zip` 适合当前快速迭代阶段。后续发布正式版本后，推荐改为固定 Release Tag 的 ZIP 地址，以获得可重复安装能力。
+
+## 核心场景：管理用户对话中提供的来源
+
+这个扩展首先管理的是**用户在 Spec Kit 对话中主动提供的信息**，而不仅仅是扫描已经生成的 Markdown。
+
+当用户在 `/speckit.specify`、`/speckit.clarify`、`/speckit.plan` 或后续讨论中提供参考资料时，应在对话上下文消失之前保存其来源信息。
+
+典型输入包括：
 
 ```text
 需求参考：https://docs.example.com/prd/login
 UI 看这个：https://figma.com/design/...
 接口定义：https://api.example.com/openapi.json
-这个 issue 可以参考：https://github.com/org/repo/issues/123
+这个 Issue 可以参考：https://github.com/org/repo/issues/123
 ```
 
-Even a message containing only a URL can be a valid source when the surrounding workflow makes the intent clear.
+即使用户只发送了：
 
-For conversational sources, the registry records concise provenance metadata such as:
+```text
+https://docs.example.com/auth/api-v2
+```
+
+只要当前上下文明显是在提供参考资料，也可以作为合法来源捕获。
+
+对来自对话的来源，注册表会尽量保存：
 
 ```text
 Origin: user
@@ -31,27 +69,19 @@ Introduced during: specify | clarify | plan
 Context: 登录需求参考 / UI 设计稿 / 认证接口定义
 ```
 
-The full conversation is **not** copied into the registry.
+不会把完整聊天记录复制进仓库。
 
-## Principles
+## 设计原则
 
-1. **User-provided references are first-class provenance.** Capture them from the active conversation before relying on artifact scanning.
-2. **Sources are referenced, not copied.** External documents remain at their original location.
-3. **Source IDs are stable.** A URL may change; `SRC-xxx` should not.
-4. **Human-readable first.** A registry must be understandable without opening every URL.
-5. **Bare URLs are valid input, not valid final presentation.** The extension derives a readable label and marks uncertain metadata `needs-review`.
-6. **Provider-agnostic core.** Figma, Notion, GitHub, Confluence, Swagger and plain web links all use the same source model.
-7. **Git-native by default.** Markdown is the canonical store; no database is required.
+1. **用户提供的资料是一等来源。** 优先从当前对话捕获，再检查生成文档。
+2. **来源只引用，不复制。** PRD、Figma、API 文档等仍留在原位置。
+3. **Source ID 稳定。** URL 可以变化，`SRC-xxx` 不应变化。
+4. **优先可读性。** 不打开 URL 也应该大致知道某个 Source 是什么。
+5. **裸 URL 可以输入，但不能成为最终唯一展示。** 不知道真实标题时生成临时可读名称，并标记 `needs-review`。
+6. **核心与 Provider 解耦。** Figma、Notion、GitHub、Confluence、Swagger、普通网页统一使用 Source 模型。
+7. **默认 Git-native。** Markdown 是唯一事实来源，不要求外部数据库。
 
-## Installation
-
-Development installation:
-
-```bash
-specify extension add provenance --dev /path/to/spec-kit-provenance
-```
-
-## Commands
+## 命令
 
 ```text
 /speckit.provenance.add <url-or-reference>
@@ -61,55 +91,87 @@ specify extension add provenance --dev /path/to/spec-kit-provenance
 /speckit.provenance.lint
 ```
 
-The extension declares optional `after_specify`, `after_clarify`, and `after_plan` capture hooks. `capture` first examines the current user/workflow context, then reconciles active feature artifacts.
+### `add`
 
-## Capture Flow
+显式登记一个来源，并分配或复用稳定 `SRC-xxx`。
+
+### `list`
+
+以可读索引查看来源，而不是直接输出一大段裸 URL。
+
+### `show`
+
+查看单个来源，包括它是什么、为什么被记录、在哪个阶段引入、哪些 Feature 正在使用它。
+
+### `capture`
+
+从当前用户对话、命令参数以及当前 Feature Artifact 中捕获来源。
+
+### `lint`
+
+检查重复来源、失效引用、不可读来源、秘密 URL、未登记外部证据等问题。
+
+## 自动捕获
+
+扩展声明了以下可选生命周期 Hook：
 
 ```text
-User conversation
-      ↓
-identify explicit reference material
-      ↓
-normalize / sanitize URI
-      ↓
-reuse existing SRC or allocate SRC-xxx
-      ↓
-record Origin + Phase + Context
-      ↓
-project Source Registry
-      ↓
-feature sources.md
-      ↓
-optional citations in spec / plan / research
+after_specify
+after_clarify
+after_plan
 ```
 
-Generated artifacts are a secondary source surface. Provenance must not wait for a URL to be copied into `spec.md` before registering a reference that the user already supplied clearly in conversation.
+它们都会调用：
 
-## Storage
+```text
+speckit.provenance.capture
+```
 
-Project registry:
+捕获优先顺序：
+
+```text
+用户对话
+   ↓
+当前命令参数 / Hook 上下文
+   ↓
+当前 Feature 文档
+   ↓
+来源注册表
+   ↓
+Feature sources.md
+   ↓
+必要时写入 [SRC-xxx] 引用
+```
+
+重点是：如果用户已经在对话里明确给了来源，不需要等链接之后出现在 `spec.md` 或 `plan.md` 才登记。
+
+## 存储位置
+
+### 项目级来源注册表
 
 ```text
 .specify/provenance/sources.md
 ```
 
-Feature manifest:
+这里保存完整、唯一的 Source 元数据。
+
+### Feature 来源清单
 
 ```text
 specs/<feature>/sources.md
 ```
 
-The project registry contains canonical metadata. Feature manifests contain concise references only.
+这里只保存当前 Feature 实际使用到的来源及其用途，不复制完整元数据。
 
-## Example
+## 裸 URL 示例
 
-A user provides only:
+用户只提供：
 
 ```text
 https://www.figma.com/design/abc123/login
 ```
 
-That is still a valid source. Instead of storing a bare link, Provenance records something like:
+不会只保存成一条裸链接，而会形成类似：
 
 ```markdown
 ## SRC-001 — www.figma.com — abc123 / login
@@ -119,78 +181,156 @@ That is still a valid source. Instead of storing a bare link, Provenance records
 - **URI**: https://www.figma.com/design/abc123/login
 - **Status**: needs-review
 - **Display**: www.figma.com — abc123 / login
-- **Summary**: External reference; title and purpose need review.
+- **Summary**: 外部参考来源；真实标题和具体用途待确认。
 - **Origin**: user
 - **Introduced during**: specify
 - **Context**: 用户在需求讨论中提供的 UI 参考
 ```
 
-Once a human or agent learns the real title/purpose, the metadata can be improved without changing `SRC-001`.
+后续知道真实标题后，可以完善：
 
-## Citations
-
-Use concise citations in Spec Kit artifacts:
-
-```markdown
-- **FR-006**: Verification codes cannot be resent within 60 seconds.  
-  **Source**: [SRC-003 §4.2]
+```text
+Display: 登录页面设计稿
+Status: active
 ```
 
-For an API decision:
+但 `SRC-001` 保持不变。
+
+## 引用方式
+
+需求可以写：
 
 ```markdown
-Use `POST /v2/auth/login`. **Source**: [SRC-009 POST /v2/auth/login]
+- **FR-006**：验证码发送后 60 秒内不得重复发送。  
+  **来源**：[SRC-003 §4.2]
 ```
 
-The parser only needs the stable `SRC-xxx`; locator text remains intentionally human-readable.
+Plan / Research 中可以写：
 
-## Source Types
+```markdown
+采用 `POST /v2/auth/login`。**来源**：[SRC-009 POST /v2/auth/login]
+```
 
-`requirement`, `design`, `api`, `architecture`, `standard`, `research`, `issue`, `code`, `wiki`, `document`, `other`.
+解析时真正稳定的机器部分只有 `SRC-xxx`，Locator 保持人类可读自由文本。
 
-## Source Status
+## 来源类型
 
-- `active` — currently valid
-- `needs-review` — registered safely, but metadata still needs clarification
-- `superseded` — replaced by a newer source
-- `stale` — reachable but likely outdated
-- `unavailable` — cannot currently be accessed
+以下值属于机器协议，保持英文：
 
-## Security
+```text
+requirement
+design
+api
+architecture
+standard
+research
+issue
+code
+wiki
+document
+other
+```
 
-Do not persist signed URLs, tokens, API keys, cookies, or credentials. The included helper strips common secret-bearing query keys before writing a URL.
+## 来源状态
 
-## Helper Script
+```text
+active         当前有效
+needs-review   已安全登记，但元数据仍需要确认
+superseded     已被新来源替代
+stale          仍可访问，但可能已经过期
+unavailable    当前无法访问
+```
 
-The Markdown registry remains canonical. A small deterministic helper is included for safe mechanical operations:
+## 对话来源元数据
+
+主要字段：
+
+```text
+Origin
+Introduced during
+Context
+```
+
+例如：
+
+```text
+Origin: user
+Introduced during: plan
+Context: 用户指定的登录接口参考
+```
+
+`Origin` 表示来源如何进入当前工作流，不代表外部文档作者是谁。
+
+## 安全
+
+不要把以下内容写入 Git：
+
+- signed URL；
+- token；
+- API Key；
+- Cookie；
+- credential；
+- 临时认证参数。
+
+自带 Python helper 会在写入 URL 前移除常见敏感 query 参数。
+
+## Python 辅助工具
+
+Markdown 注册表仍然是唯一事实来源。Python helper 只处理适合自动化的确定性操作：
 
 ```bash
 python scripts/python/provenance.py add https://example.com/docs/api
+
 python scripts/python/provenance.py add https://example.com/docs/api \
   --origin user \
   --phase plan \
   --context "登录接口参考"
+
 python scripts/python/provenance.py list
 python scripts/python/provenance.py lint
 ```
 
-Agent commands remain responsible for contextual judgments such as whether a link is actually evidence and how it relates to a feature.
+是否应该把一个链接视为真正的“需求依据”、它与哪个 Requirement 或 Decision 关联，仍由 Agent 根据当前对话上下文判断。
 
-## Roadmap
+## 与中文 Preset 配合
 
-### v0.1
+可以和 [`spec-kit-preset-zh-cn`](https://github.com/lin52025iq/spec-kit-preset-zh-cn) 同时使用：
 
-- registry and stable IDs
-- user-conversation-first source capture
-- conversational provenance metadata (`Origin`, `Introduced during`, `Context`)
-- readable handling of bare URLs
-- add/list/show/capture/lint commands
-- optional lifecycle capture hooks
-- basic URL sanitization and linting
+```bash
+specify preset add --from https://github.com/lin52025iq/spec-kit-preset-zh-cn/archive/refs/heads/master.zip
+specify extension add provenance --from https://github.com/lin52025iq/spec-kit-provenance/archive/refs/heads/master.zip
+```
 
-### Later
+两者职责不同：
 
-- richer requirement/decision relationship graph
-- provider adapters and metadata refresh
-- source impact analysis
-- optional integration with `spec-kit-wiki`
+```text
+spec-kit-preset-zh-cn
+→ 中文模板、中文文档、中文工作流展示
+
+spec-kit-provenance
+→ 来源捕获、来源登记、来源引用、来源追溯
+```
+
+## 当前版本
+
+`0.1.0`
+
+当前能力：
+
+- 用户对话优先的来源捕获；
+- 稳定 `SRC-xxx`；
+- 裸 URL 可读化；
+- `Origin / Introduced during / Context` 对话来源元数据；
+- `add / list / show / capture / lint`；
+- `after_specify / after_clarify / after_plan` 可选 Hook；
+- URL 清理和基础来源质量检查；
+- 项目级 Registry 与 Feature 级来源清单。
+
+## 后续方向
+
+- 更完整的 Requirement / Decision 来源关系图；
+- Figma、Notion、GitHub、OpenAPI 等 Provider Adapter；
+- 来源元数据自动刷新；
+- 来源变化后的影响分析；
+- 与 `spec-kit-wiki` 的可选集成；
+- 正式 Release Tag 与社区 Catalog 发布。
