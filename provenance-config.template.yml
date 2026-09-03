@@ -1,0 +1,40 @@
+registry:
+  path: .specify/provenance/sources.md
+
+feature_manifest:
+  enabled: true
+  filename: sources.md
+
+capture:
+  auto_register_high_confidence: true
+  scan_files:
+    - spec.md
+    - plan.md
+    - research.md
+    - data-model.md
+    - quickstart.md
+  recognize_markdown_links: true
+  recognize_plain_urls: true
+  ignore_hosts:
+    - localhost
+    - 127.0.0.1
+
+citation:
+  format: "[{id}]"
+  id_pattern: "SRC-[0-9]{3,}"
+
+lint:
+  orphan_source: warning
+  superseded_source: warning
+  missing_source: error
+  duplicate_uri: warning
+
+security:
+  strip_query_keys:
+    - token
+    - access_token
+    - api_key
+    - key
+    - signature
+    - sig
+    - auth
