@@ -1,0 +1,51 @@
+schema_version: "1.0"
+
+extension:
+  id: provenance
+  name: "Spec Kit Provenance"
+  version: "0.1.0"
+  description: "Track external sources and provenance for specifications, plans, research, and other Spec Kit artifacts."
+  author: lin52025iq
+  repository: https://github.com/lin52025iq/spec-kit-provenance
+  license: MIT
+
+requires:
+  speckit_version: ">=0.2.0"
+
+provides:
+  commands:
+    - name: speckit.provenance.add
+      file: commands/speckit.provenance.add.md
+      description: "Register a source and assign a stable SRC identifier"
+    - name: speckit.provenance.list
+      file: commands/speckit.provenance.list.md
+      description: "List registered sources in a human-readable form"
+    - name: speckit.provenance.show
+      file: commands/speckit.provenance.show.md
+      description: "Show one source and its references"
+    - name: speckit.provenance.capture
+      file: commands/speckit.provenance.capture.md
+      description: "Capture high-confidence sources from the active feature context"
+    - name: speckit.provenance.lint
+      file: commands/speckit.provenance.lint.md
+      description: "Validate source registry and citations"
+
+hooks:
+  after_specify:
+    command: speckit.provenance.capture
+    optional: true
+    description: "Capture requirement and design sources after specification"
+  after_clarify:
+    command: speckit.provenance.capture
+    optional: true
+    description: "Capture sources introduced during clarification"
+  after_plan:
+    command: speckit.provenance.capture
+    optional: true
+    description: "Capture API, architecture, standards, and research sources after planning"
+
+tags:
+  - provenance
+  - sources
+  - traceability
+  - documentation
