@@ -2,13 +2,15 @@
 
 为 [Spec Kit](https://github.com/github/spec-kit) 提供 Git-native 的来源、证据与追溯管理能力。
 
+> **最低兼容版本：`specify 1.0.5.dev0`。** 本扩展的开发、测试和后续功能设计均以 `1.0.5.dev0` 及更高版本为基线。
+
 它主要回答一个问题：
 
 > 这条需求、设计约束、API 决策或研究结论，到底来自哪里？
 
 ## 一键安装
 
-先确保当前项目已经通过 `specify init` 初始化。
+先确保当前项目已经通过 `specify init` 初始化，并且当前 `specify` 版本不低于 `1.0.5.dev0`。
 
 然后直接从 GitHub 安装当前版本：
 
@@ -314,6 +316,10 @@ spec-kit-provenance
 ## 当前版本
 
 `0.1.0`
+
+兼容基线：
+
+- `specify >= 1.0.5.dev0`
 
 当前能力：
 
