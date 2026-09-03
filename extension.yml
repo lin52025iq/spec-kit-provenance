@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: provenance
   name: "Spec Kit 来源追溯"
-  version: "0.1.0"
+  version: "0.1.1"
   description: "管理用户对话和 Spec Kit 产物中的外部来源、证据与追溯关系。"
   author: lin52025iq
   repository: https://github.com/lin52025iq/spec-kit-provenance
